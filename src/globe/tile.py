@@ -1,6 +1,6 @@
 import math
 import json
-from src.globe.point import Point
+from globe.point import Point
 
 
 def vector(p1: Point, p2: Point) -> Point:
@@ -36,24 +36,24 @@ def normalize_vector(v):
     )
 
 
-class tile:
+class Tile:
     def __init__(self, centre_point: Point, hex_size=1):
         hex_size = max(0.01, min(1.0, hex_size))
         self.centre_point = centre_point
-        self.faces = centre_point.get_oredered_faces()
+        self.faces = centre_point.get_ordered_faces()
         self.boundary = []
         self.neighbour_ids = []
         self.neighbours = []
         neighbour_hash = {}
         for f in self.faces:
+            centroid_point = f.get_centroid()
             self.boundary.append(
-                f.get_centroid().segment(self.centre_point, hex_size))
+                centroid_point.segment(self.centre_point, hex_size))
             other_points = f.get_other_points(self.centre_point)
-            for other in range(2):
-                neighbour_hash[other_points[other]] = 1
+            for other in other_points:
+                neighbour_hash[other] = 1
         self.neighbour_ids = neighbour_hash.keys()
-        normal = calculate_surface_normal(
-            self.boundary[1], self.boundary[2], self.boundary[3])
+        normal = calculate_surface_normal(*self.boundary[:3])
         if not pointing_away_from_origin(self.centre_point, normal):
             self.boundary.reverse()
 
@@ -79,12 +79,12 @@ class tile:
 
     def to_json(self):
         return json.dump({
-            'centre_point': self.centre_point.to_json(),
-            'boundary': [point.to_json() for point in self.boundary]
+            'centre_point': str(self.centre_point),
+            'boundary': [str(point) for point in self.boundary]
         })
 
-    def __repr(self):
-        return self.to_json()
+    def __repr__(self):
+        return str(self.to_json())
 
     def __str__(self):
-        return str(self.centre_point)
+        return "Tile({})".format(self.__repr__())
