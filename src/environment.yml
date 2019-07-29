@@ -1,0 +1,9 @@
+name: terraformer
+channels:
+  - defaults
+dependencies:
+  - python=3.7.*
+  - mypy=0.701
+  - flake8=3.7.*
+prefix: C:\Users\Alex\.conda\envs\terraformer
+

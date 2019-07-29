@@ -1,6 +1,9 @@
+from __future__ import annotations
 import math
 import json
-from globe.point import Point
+from typing import Dict, List
+from src.globe.point import Point
+from src.globe.face import Face
 
 
 def vector(p1: Point, p2: Point) -> Point:
@@ -19,15 +22,15 @@ def calculate_surface_normal(p1: Point, p2: Point, p3: Point) -> Point:
     )
 
 
-def pointing_away_from_origin(p, v):
+def pointing_away_from_origin(p: Point, v: Point) -> bool:
     return ((p.x * v.x) >= 0) and ((p.y * v.y) >= 0) and ((p.z * v.z) >= 0)
 
 
-def normalize_vector(v):
+def normalize_vector(v: Point) -> Point:
     magnitude = math.sqrt(
-        math.pow(v.x, 2) +
-        math.pow(v.y, 2) +
-        math.pow(v.z, 2)
+        math.pow(v.x, 2)
+        + math.pow(v.y, 2)
+        + math.pow(v.z, 2)
     )
     return Point(
         v.x / magnitude,
@@ -37,14 +40,14 @@ def normalize_vector(v):
 
 
 class Tile:
-    def __init__(self, centre_point: Point, hex_size=1):
+    def __init__(self, centre_point: Point, hex_size: float = 1):
         hex_size = max(0.01, min(1.0, hex_size))
         self.centre_point = centre_point
-        self.faces = centre_point.get_ordered_faces()
-        self.boundary = []
-        self.neighbour_ids = []
-        self.neighbours = []
-        neighbour_hash = {}
+        self.faces: List[Face] = centre_point.get_ordered_faces()
+        self.boundary: List[Point] = []
+        self.neighbour_ids: List[Point] = []
+        self.neighbours: List[Tile] = []
+        neighbour_hash: Dict[Point, int] = {}
         for f in self.faces:
             centroid_point = f.get_centroid()
             self.boundary.append(
@@ -52,12 +55,13 @@ class Tile:
             other_points = f.get_other_points(self.centre_point)
             for other in other_points:
                 neighbour_hash[other] = 1
-        self.neighbour_ids = neighbour_hash.keys()
+        self.neighbour_ids = list(neighbour_hash.keys())
         normal = calculate_surface_normal(*self.boundary[:3])
         if not pointing_away_from_origin(self.centre_point, normal):
             self.boundary.reverse()
 
-    def get_lat_long(self, radius, boundary_num):
+    def get_lat_long(self, radius: float, boundary_num: int)\
+            -> Dict[str, float]:
         point = self.centre_point
         if(type(boundary_num) == int and boundary_num < len(self.boundary)):
             point = self.boundary[boundary_num]
@@ -70,21 +74,21 @@ class Tile:
             "lon": 180 * theta / math.pi
         }
 
-    def scaled_boundary(self, scale):
+    def scaled_boundary(self, scale: float) -> List[Point]:
         scale = max(0, min(1, scale))
-        ret = []
-        for i in self.boundary:
-            ret.append(self.centre_point.segment(i, 1 - scale))
+        ret: List[Point] = []
+        for p in self.boundary:
+            ret.append(self.centre_point.segment(p, 1 - scale))
         return ret
 
-    def to_json(self):
-        return json.dump({
+    def to_json(self) -> str:
+        return json.dumps({
             'centre_point': str(self.centre_point),
             'boundary': [str(point) for point in self.boundary]
         })
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.to_json())
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Tile({})".format(self.__repr__())
